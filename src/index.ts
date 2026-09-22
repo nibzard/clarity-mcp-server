@@ -1,7 +1,8 @@
 // ABOUTME: Entry point that builds the MCP server, registers the three Clarity tools, and serves stdio.
 // ABOUTME: Tool handlers delegate to tools.ts. Input validation comes from the schemas in types.ts.
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { z } from "zod";
 
 import pkg from "../package.json" with { type: "json" };
 
@@ -14,102 +15,49 @@ import {
   SESSION_RECORDINGS_DESCRIPTION,
   SESSION_RECORDINGS_TOOL
 } from "./constants.js";
-import {
-  SYSTEM_INSTRUCTIONS_PROMPT
-} from "./instructions.js";
+import { SYSTEM_INSTRUCTIONS_PROMPT } from "./instructions.js";
 import {
   listSessionRecordingsAsync,
   queryAnalyticsDashboardAsync,
   queryDocumentationAsync
 } from "./tools.js";
-import {
-  ListRequest,
-  SearchRequest,
-} from "./types.js";
+import { ListRequest, SearchRequest } from "./types.js";
 
-// Create server instance
-const server = new McpServer(
-  {
-    name: pkg.name,
-    version: pkg.version,
-  },
-  {
-    instructions: SYSTEM_INSTRUCTIONS_PROMPT,
-    capabilities: {
-      resources: {},
-      tools: {}
-    },
-  }
-);
+const readOnly = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
-// Register the query-analytics-data tool
-server.tool(
-  ANALYTICS_DASHBOARD_TOOL,             /* Name */
-  ANALYTICS_DASHBOARD_DESCRIPTION,      /* Description */
-  SearchRequest,                        /* Parameter Schema */
-  {                                     /* Metadata & Annotations */
-    title: "Query Analytics Dashboard",
-    readOnlyHint: true,
-    destructiveHint: false,
-    openWorldHint: false
-  },
-  async ({ query }) => {
-    return await queryAnalyticsDashboardAsync(query, Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }
-);
+const createServer = () => {
+  const server = new McpServer(
+    { name: pkg.name, version: pkg.version },
+    { instructions: SYSTEM_INSTRUCTIONS_PROMPT, capabilities: { resources: {}, tools: {} } },
+  );
 
-// Register the session-recordings tool
-server.tool(
-  SESSION_RECORDINGS_TOOL,              /* Name */
-  SESSION_RECORDINGS_DESCRIPTION,       /* Description */
-  ListRequest,                          /* Parameter Schema */
-  {                                     /* Metadata & Annotations */
-    title: "List Session Recordings",
-    readOnlyHint: true,
-    destructiveHint: false,
-    openWorldHint: false
-  },
-  async ({ filters, sortBy, count }) => {
-    const startDate = new Date(filters.date.start);
-    const endDate = new Date(filters.date.end);
+  server.registerTool(
+    ANALYTICS_DASHBOARD_TOOL,
+    { title: "Query Analytics Dashboard", description: ANALYTICS_DASHBOARD_DESCRIPTION, inputSchema: z.object(SearchRequest), annotations: readOnly },
+    async ({ query }) => queryAnalyticsDashboardAsync(query, Intl.DateTimeFormat().resolvedOptions().timeZone),
+  );
 
-    return await listSessionRecordingsAsync(startDate, endDate, filters, sortBy, count);
-  }
-);
+  server.registerTool(
+    SESSION_RECORDINGS_TOOL,
+    { title: "List Session Recordings", description: SESSION_RECORDINGS_DESCRIPTION, inputSchema: z.object(ListRequest), annotations: readOnly },
+    async ({ filters, sortBy, count }) =>
+      listSessionRecordingsAsync(new Date(filters.date.start), new Date(filters.date.end), filters, sortBy, count),
+  );
 
-// Register the query-documentation-resources tool
-server.tool(
-  DOCUMENTATION_TOOL,                   /* Name */
-  DOCUMENTATION_DESCRIPTION,            /* Description */
-  SearchRequest,                        /* Parameter Schema */
-  {                                     /* Metadata & Annotations */
-    title: "Query Documentation Resources",
-    readOnlyHint: true,
-    destructiveHint: false,
-    openWorldHint: false
-  },
-  async ({ query }) => {
-    return await queryDocumentationAsync(query);
-  }
-);
+  server.registerTool(
+    DOCUMENTATION_TOOL,
+    { title: "Query Documentation Resources", description: DOCUMENTATION_DESCRIPTION, inputSchema: z.object(SearchRequest), annotations: readOnly },
+    async ({ query }) => queryDocumentationAsync(query),
+  );
 
-// Main function
-async function main() {
-  // Log configuration status
-  if (CLARITY_API_TOKEN) {
-    console.error("Clarity API token configured via environment/command-line");
-  } else {
-    console.error("No Clarity API token configured. Set CLARITY_API_TOKEN or pass --clarity_api_token.");
-  }
+  return server;
+};
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-
-  console.error("Microsoft Clarity Data Export MCP Server running on stdio...");
+if (CLARITY_API_TOKEN) {
+  console.error("Clarity API token configured via environment/command-line");
+} else {
+  console.error("No Clarity API token configured. Set CLARITY_API_TOKEN or pass --clarity_api_token.");
 }
 
-// Run the server
-main().catch((error) => {
-  console.error("Fatal error in main():", error);
-  process.exit(1);
-});
+serveStdio(createServer);
+console.error("Microsoft Clarity Data Export MCP Server running on stdio...");
