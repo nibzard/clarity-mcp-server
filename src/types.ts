@@ -1,3 +1,5 @@
+// ABOUTME: Zod schemas for the session recordings and natural language query tool inputs.
+// ABOUTME: Field descriptions double as guidance for the calling model, so keep them accurate.
 import { z } from "zod";
 
 export enum SortOptionsEnum {
@@ -30,6 +32,17 @@ const NullableRangeFilter = z.object({
   max: z.number().nullable(),
 });
 
+const UtcTimestamp = z.string().datetime({
+  message: "Use UTC ISO 8601 format, for example 2024-01-01T00:00:00.000Z",
+});
+
+// Reject a start after the end. Unparseable values are already reported by UtcTimestamp.
+const isOrderedDateRange = (range: { start: string; end: string }): boolean => {
+  const start = Date.parse(range.start);
+  const end = Date.parse(range.end);
+  return Number.isNaN(start) || Number.isNaN(end) || start <= end;
+};
+
 const Filters = z.object({
   referringUrl: z.string().optional().describe("Filter by the referring URL that brought users to the site"),
   userType: z.enum(["NewUser", "ReturningUser"]).optional().describe("Filter by user type. Accepted values: NewUser, ReturningUser"),
@@ -59,34 +72,42 @@ const Filters = z.object({
   rageClickPresent: z.boolean().optional().describe("Filter sessions containing rage clicks (rapid repeated clicks). Set to true to include only sessions with rage clicks"),
   excessiveScrollPresent: z.boolean().optional().describe("Filter sessions with excessive scrolling behavior. Set to true to include only sessions with excessive scrolling"),
   quickbackClickPresent: z.boolean().optional().describe("Filter sessions with quick back navigation clicks. Set to true to include only sessions with quick back clicks"),
-  visiblePageDuration: NullableRangeFilter.optional().describe("Filter by time spent on visible pages in minutes. Set to null to ignore this filter."),
-  hiddenPageDuration: NullableRangeFilter.optional().describe("Filter by time spent on hidden/background pages in minutes. Set to null to ignore this filter."),
-  pageDuration: NullableRangeFilter.optional().describe("Filter by total page duration in minutes. Set to null to ignore this filter."),
-  sessionDuration: NullableRangeFilter.optional().describe("Filter by total session duration in minutes. Set to null to ignore this filter."),
-  scrollDepth: createRangeFilter(0, 100).optional().describe("Filter by maximum scroll depth percentage. Set to null to ignore this filter."),
-  pagesCount: NullableRangeFilter.optional().describe("Filter by number of pages visited in session. Set to null to ignore this filter."),
-  pageClickEventCount: NullableRangeFilter.optional().describe("Filter by number of clicks per page. Set to null to ignore this filter."),
-  sessionClickEventCount: NullableRangeFilter.optional().describe("Filter by total clicks per session. Set to null to ignore this filter."),
-  performanceScore: createRangeFilter(0, 100).optional().describe("Filter by overall performance score. Set to null to ignore this filter."),
-  largestContentfulPaint: NullableRangeFilter.optional().describe("Filter by Largest Contentful Paint web vital in seconds. Set to null to ignore this filter."),
-  cumulativeLayoutShift: NullableRangeFilter.optional().describe("Filter by Cumulative Layout Shift web vital in seconds. Set to null to ignore this filter."),
-  firstInputDelay: NullableRangeFilter.optional().describe("Filter by First Input Delay web vital in milliseconds. Set to null to ignore this filter."),
-  productRating: NullableRangeFilter.optional().describe("Filter by product ratings (e.g., 1-5 stars). Set to null to ignore this filter."),
-  productRatingsCount: NullableRangeFilter.optional().describe("Filter by number of product ratings. Set to null to ignore this filter."),
-  productPrice: NullableRangeFilter.optional().describe("Filter by product price range. Set to null to ignore this filter."),
+  visiblePageDuration: NullableRangeFilter.optional().describe("Filter by time spent on visible pages in minutes. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  hiddenPageDuration: NullableRangeFilter.optional().describe("Filter by time spent on hidden/background pages in minutes. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  pageDuration: NullableRangeFilter.optional().describe("Filter by total page duration in minutes. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  sessionDuration: NullableRangeFilter.optional().describe("Filter by total session duration in minutes. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  scrollDepth: createRangeFilter(0, 100).optional().describe("Filter by maximum scroll depth percentage. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  pagesCount: NullableRangeFilter.optional().describe("Filter by number of pages visited in session. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  pageClickEventCount: NullableRangeFilter.optional().describe("Filter by number of clicks per page. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  sessionClickEventCount: NullableRangeFilter.optional().describe("Filter by total clicks per session. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  performanceScore: createRangeFilter(0, 100).optional().describe("Filter by overall performance score. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  largestContentfulPaint: NullableRangeFilter.optional().describe("Filter by Largest Contentful Paint web vital in seconds. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  cumulativeLayoutShift: NullableRangeFilter.optional().describe("Filter by Cumulative Layout Shift web vital in seconds. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  firstInputDelay: NullableRangeFilter.optional().describe("Filter by First Input Delay web vital in milliseconds. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  productRating: NullableRangeFilter.optional().describe("Filter by product ratings (e.g., 1-5 stars). Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  productRatingsCount: NullableRangeFilter.optional().describe("Filter by number of product ratings. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
+  productPrice: NullableRangeFilter.optional().describe("Filter by product price range. Omit this filter to ignore it. Set min or max to null to leave that bound open."),
   productName: z.string().optional().describe("Filter by product name (partial match supported using contains operator)"),
   productPurchases: z.boolean().optional().describe("Filter sessions with checkout conversion/purchases. Set to true to include only sessions with purchases"),
   productAvailability: z.boolean().optional().describe("Filter by product availability status. Set to true to include only sessions with available products"),
   productBrand: z.array(z.string()).optional().describe("Filter by product brand names (e.g., ['Nike', 'Apple', 'Samsung'])"),
   checkoutAbandonmentStep: z.array(z.string()).optional().describe("Filter by checkout abandonment steps/stages (e.g., ['cart', 'shipping', 'payment'])"),
   date: z.object({
-    start: z.string().describe("The start date of the time interval in UTC ISO 8601 with milliseconds format (yyyy-MM-ddTHH:mm:ss.fffZ)."),
-    end: z.string().describe("The end date of the time interval in UTC ISO 8601 with milliseconds format (yyyy-MM-ddTHH:mm:ss.fffZ)."),
+    start: UtcTimestamp.describe("The start date of the time interval in UTC ISO 8601 with milliseconds format (yyyy-MM-ddTHH:mm:ss.fffZ)."),
+    end: UtcTimestamp.describe("The end date of the time interval in UTC ISO 8601 with milliseconds format (yyyy-MM-ddTHH:mm:ss.fffZ)."),
+  }).refine(isOrderedDateRange, {
+    message: "The start date must not be after the end date",
+    path: ["start"],
   }),
 })
   .describe("A set of filters that can be applied to the Microsoft Clarity to session recordings. This allows you to filter recordings based on various criteria such as URLs, device types, browser, OS, country, city, and more. The date filter is required and must be in UTC ISO 8601 format.");
 
-const SampleCount = z.number().lte(250, "Maximum sample count is 250").default(100).describe("The number of sample session recordings to return. Default is 100. Maximum is 250.");
+const SampleCount = z.number()
+  .int("Sample count must be a whole number")
+  .min(1, "Minimum sample count is 1")
+  .max(250, "Maximum sample count is 250")
+  .default(100)
+  .describe("The number of sample session recordings to return. Default is 100. Minimum is 1. Maximum is 250.");
 
 const SortOptions = z.enum([
   "SessionStart_DESC",

@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "@microsoft/clarity-mcp-server",
   "display_name": "Microsoft Clarity",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "MCP Server for Microsoft Clarity",
   "long_description": "This extension enables integration between AI systems and Microsoft Clarity, providing access to project analytics, documentation, and session recordings.",
   "author": {
@@ -34,14 +34,14 @@
   "tools": [
     {
       "name": "list-session-recordings",
-      "description": "List Microsoft Clarity session recordings timeline information. Returns metadata including session link, duration, and a timeline of relevant user interactions."
+      "description": "List Microsoft Clarity session recordings based on specified filters. The filters allow you to narrow down the recordings by various criteria such as URLs, device types, browser, OS, country, city, and more. The date filter is required and must be in UTC ISO 8601 format."
     },
     {
-      "name": "query-documentation-data",
-      "description": "Fetch Microsoft Clarity documentation snippets for finding answers to user questions including step-by-step screenshots for setup guides, features, usage, troubleshooting, and integration instructions. The query should be focused on one specific documentation topic or question. Avoid complex multi-purpose queries."
+      "name": "query-documentation-resources",
+      "description": "Retrieve Microsoft Clarity documentation snippets for finding answers to user questions including step-by-step screenshots for setup guides, features, usage, troubleshooting, and integration instructions. The query should be focused on one specific documentation topic or question. Avoid complex multi-purpose queries."
     },
     {
-      "name": "query-analytics-data",
+      "name": "query-analytics-dashboard",
       "description": "Fetch Microsoft Clarity analytics data using a simplified natural language search query. The query should be focused on one specific data retrieval or aggregation task. Avoid complex multi-purpose queries. Time ranges should be explicitly specified when possible. If no time range is provided, prompt the user to specify one."
     }
   ],
@@ -72,7 +72,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=16.0.0"
+      "node": ">=20.10.0"
     }
   },
   "user_config": {

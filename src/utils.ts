@@ -1,3 +1,5 @@
+// ABOUTME: Reads server configuration from CLI flags and environment variables.
+// ABOUTME: Wraps Clarity endpoint calls so every failure becomes a clear MCP tool error.
 // Get configuration from environment variables or command-line arguments
 export const getConfigValue = (name: string, fallback?: string): string | undefined => {
   // Check command line args first (format: --name=value or --name value)
@@ -30,6 +32,7 @@ type ToolResult = {
     type: "text";
     text: string;
   }>;
+  isError?: true;
 };
 
 const textResult = (text: string): ToolResult => ({
@@ -39,6 +42,12 @@ const textResult = (text: string): ToolResult => ({
       text,
     },
   ],
+});
+
+// Mark a result as a tool error so MCP clients can tell failures from data.
+const errorResult = (text: string): ToolResult => ({
+  ...textResult(text),
+  isError: true,
 });
 
 export const describeHttpError = (status: number): string => {
@@ -67,7 +76,7 @@ export const tryAsync = async (
 ): Promise<ToolResult> => {
   // Check that the token configuration used by the request layer is present.
   if (!getConfigValue("clarity_api_token")) {
-    return textResult(
+    return errorResult(
       "No Clarity API token provided. Configure CLARITY_API_TOKEN or pass --clarity_api_token on the command line.",
     );
   }
@@ -78,7 +87,7 @@ export const tryAsync = async (
     if (!response.ok) {
       await response.body?.cancel();
       console.error(`Microsoft Clarity endpoint request failed with HTTP ${response.status}`);
-      return textResult(describeHttpError(response.status));
+      return errorResult(describeHttpError(response.status));
     }
 
     try {
@@ -86,13 +95,13 @@ export const tryAsync = async (
       return textResult(JSON.stringify(data, null, 2));
     } catch (error) {
       console.error("Microsoft Clarity endpoint returned invalid JSON:", error);
-      return textResult(
+      return errorResult(
         "Microsoft Clarity returned an invalid response. Retry the request; if the problem persists, report it with the tool name and timestamp.",
       );
     }
   } catch (error) {
     console.error("Error reaching Microsoft Clarity endpoint:", error);
-    return textResult(
+    return errorResult(
       "Could not reach Microsoft Clarity. Check network connectivity and retry the request.",
     );
   }

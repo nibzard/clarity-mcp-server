@@ -1,17 +1,26 @@
+// ABOUTME: Unit tests for configuration lookup and the shared Clarity request wrapper.
+// ABOUTME: Covers argument parsing, token guidance, and HTTP, JSON, and network failure results.
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
 
-import { describeHttpError, getConfigValue, tryAsync } from "../.test-dist/utils.js";
+import { describeHttpError, getConfigValue, tryAsync } from "../dist/utils.js";
 
 const originalToken = process.env.CLARITY_API_TOKEN;
 const originalFetch = globalThis.fetch;
+const originalConsoleError = console.error;
+let loggedErrors = [];
 
 beforeEach(() => {
   process.env.CLARITY_API_TOKEN = "test-token";
+  loggedErrors = [];
+  console.error = (...args) => {
+    loggedErrors.push(args.map(String).join(" "));
+  };
 });
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  console.error = originalConsoleError;
   if (originalToken === undefined) {
     delete process.env.CLARITY_API_TOKEN;
   } else {
@@ -76,6 +85,8 @@ test("tryAsync returns successful JSON as MCP text content", async () => {
 
   const result = await tryAsync("https://clarity.microsoft.com/mcp/dashboard/query");
   assert.equal(result.content[0].text, '{\n  "sessions": 12\n}');
+  assert.equal(result.isError, undefined);
+  assert.deepEqual(loggedErrors, []);
 });
 
 test("tryAsync gives accurate token configuration guidance", async () => {
@@ -83,6 +94,7 @@ test("tryAsync gives accurate token configuration guidance", async () => {
 
   const result = await tryAsync("https://clarity.microsoft.com/mcp/dashboard/query");
   assert.match(result.content[0].text, /Configure CLARITY_API_TOKEN/);
+  assert.equal(result.isError, true);
   assert.doesNotMatch(result.content[0].text, /token parameter/);
 });
 
@@ -102,6 +114,8 @@ for (const [status, expected] of [
     const result = await tryAsync("https://clarity.microsoft.com/mcp/dashboard/query");
     assert.match(result.content[0].text, expected);
     assert.match(result.content[0].text, new RegExp(String(status)));
+    assert.equal(result.isError, true);
+    assert.match(loggedErrors.join("\n"), new RegExp(`request failed with HTTP ${status}`));
   });
 }
 
@@ -120,6 +134,7 @@ test("tryAsync cancels failed response bodies before returning", async () => {
   const result = await tryAsync("https://clarity.microsoft.com/mcp/dashboard/query");
   assert.equal(cancelled, true);
   assert.match(result.content[0].text, /service error/);
+  assert.equal(result.isError, true);
 });
 
 test("describeHttpError handles other client errors without exposing response bodies", () => {
@@ -140,6 +155,8 @@ test("tryAsync distinguishes invalid JSON from endpoint failures", async () => {
 
   const result = await tryAsync("https://clarity.microsoft.com/mcp/dashboard/query");
   assert.match(result.content[0].text, /invalid response/);
+  assert.equal(result.isError, true);
+  assert.match(loggedErrors.join("\n"), /returned invalid JSON/);
 });
 
 test("tryAsync distinguishes network failures", async () => {
@@ -149,4 +166,6 @@ test("tryAsync distinguishes network failures", async () => {
 
   const result = await tryAsync("https://clarity.microsoft.com/mcp/dashboard/query");
   assert.match(result.content[0].text, /Could not reach Microsoft Clarity/);
+  assert.equal(result.isError, true);
+  assert.match(loggedErrors.join("\n"), /Error reaching Microsoft Clarity endpoint/);
 });

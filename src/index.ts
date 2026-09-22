@@ -1,3 +1,5 @@
+// ABOUTME: Entry point that builds the MCP server, registers the three Clarity tools, and serves stdio.
+// ABOUTME: Tool handlers delegate to tools.ts. Input validation comes from the schemas in types.ts.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
@@ -68,15 +70,8 @@ server.tool(
     openWorldHint: false
   },
   async ({ filters, sortBy, count }) => {
-    const now = new Date().toISOString();
-
-    // Calculate end as now, start as now - numOfDays
-    const endDate = new Date(filters?.date?.end || now);
-    const startDate = new Date(filters?.date?.start || now);
-
-    if (!filters?.date?.start) {
-      startDate.setDate(endDate.getDate() - 2);
-    }
+    const startDate = new Date(filters.date.start);
+    const endDate = new Date(filters.date.end);
 
     return await listSessionRecordingsAsync(startDate, endDate, filters, sortBy, count);
   }

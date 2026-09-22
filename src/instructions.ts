@@ -1,3 +1,5 @@
+// ABOUTME: System instructions that the server sends to MCP clients at connect time.
+// ABOUTME: Documents each tool, its parameters, and worked examples that the tests validate.
 import {
   ANALYTICS_DASHBOARD_TOOL,
   DOCUMENTATION_TOOL,
@@ -13,7 +15,7 @@ This MCP server provides access to Microsoft Clarity analytics dashboard data, d
 Lists Microsoft Clarity session recordings with metadata including session links, duration, and user interaction timelines.
 
 **Parameters:**
-- filters: Optional filters for sessions (date range, device type, etc.)
+- filters: Filters for sessions. The date range (filters.date.start and filters.date.end, UTC ISO 8601) is required. Every other filter is optional.
 - sortBy: Sort option using SortOptions enum (default: SessionStart_DESC)
 - count: Number of sessions to retrieve (1-250, default: 100)
 
@@ -28,11 +30,11 @@ Lists Microsoft Clarity session recordings with metadata including session links
 - PageCount_DESC (most pages first)
 
 **Example Usage:**
-- Get 10 newest sessions: { "count": 10, "sortBy": "SessionStart_DESC" }
+- Get 10 newest sessions: { "filters": { "date": { "start": "2024-01-01T00:00:00.000Z", "end": "2024-01-07T23:59:59.999Z" } }, "count": 10, "sortBy": "SessionStart_DESC" }
 - Get 20 longest sessions from date range: { "filters": { "date": { "start": "2024-01-01T00:00:00.000Z", "end": "2024-01-31T23:59:59.999Z" } }, "sortBy": "SessionDuration_DESC", "count": 20 }
-- Get 15 mobile sessions with most clicks: { "filters": { "deviceType": ["Mobile"] }, "sortBy": "SessionClickCount_DESC", "count": 15 }
-- Get oldest sessions first: { "sortBy": "SessionStart_ASC", "count": 100 }
-- Get sessions with most page views: { "sortBy": "PageCount_DESC", "count": 100 }
+- Get 15 mobile sessions with most clicks: { "filters": { "date": { "start": "2024-01-01T00:00:00.000Z", "end": "2024-01-07T23:59:59.999Z" }, "deviceType": ["Mobile"] }, "sortBy": "SessionClickCount_DESC", "count": 15 }
+- Get oldest sessions first: { "filters": { "date": { "start": "2024-01-01T00:00:00.000Z", "end": "2024-01-07T23:59:59.999Z" } }, "sortBy": "SessionStart_ASC", "count": 100 }
+- Get sessions with most page views: { "filters": { "date": { "start": "2024-01-01T00:00:00.000Z", "end": "2024-01-07T23:59:59.999Z" } }, "sortBy": "PageCount_DESC", "count": 100 }
 
 ### 2. Analytics Dashboard Tool: \`${ANALYTICS_DASHBOARD_TOOL}\`
 This tool is your **primary and authoritative data source** for all dashboard-related insights and must be used to retrieve accurate, real-time data from the Microsoft Clarity dashboard.
