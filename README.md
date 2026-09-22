@@ -69,9 +69,24 @@ npx @microsoft/clarity-mcp-server --clarity_api_token=your-token-here
 
 #### Visual Studio Code Extension
 
-[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install+Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522clarity-server%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540microsoft%252Fclarity-mcp-server%2522%255D%257D)
+[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install+Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522clarity-server%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540microsoft%252Fclarity-mcp-server%2522%255D%257D) [<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install+Server+with+API+Key&color=0098FF" alt="Install in VS Code with API key prompt">](https://insiders.vscode.dev/redirect?url=vscode%3A%2F%2Fmcp.server%2Fopen%3F%257B%2522servers%2522%253A%257B%2522clarity-server%2522%253A%257B%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540microsoft%252Fclarity-mcp-server%2522%255D%252C%2522env%2522%253A%257B%2522CLARITY_API_TOKEN%2522%253A%2522%2524%257Binput%253Aclarity_api_token%257D%2522%257D%257D%257D%252C%2522inputs%2522%253A%255B%257B%2522type%2522%253A%2522promptString%2522%252C%2522id%2522%253A%2522clarity_api_token%2522%252C%2522description%2522%253A%2522Clarity%2520Data%2520Export%2520API%2520token%2522%252C%2522password%2522%253Atrue%257D%255D%257D)
 
-Click the button above to install the Microsoft Clarity MCP server directly in Visual Studio Code.
+Click the first button to install the Microsoft Clarity MCP server directly in Visual Studio Code.
+Click the second button to install it with a prompt for your Clarity API token, which VS Code asks for when the server starts for the first time.
+
+If you used the first button, set the token in your environment before starting the server:
+
+**macOS/Linux (current terminal session):**
+
+```bash
+export CLARITY_API_TOKEN=YOUR_TOKEN_HERE
+```
+
+**Windows (permanent; restart your terminal and VS Code after running):**
+
+```powershell
+setx CLARITY_API_TOKEN "YOUR_TOKEN_HERE"
+```
 
 #### Claude Desktop Plugin
 
@@ -94,9 +109,12 @@ You can provide the [Clarity data export API](https://learn.microsoft.com/en-us/
    npx @microsoft/clarity-mcp-server --clarity_api_token=your-token
    ```
 
-2. **Tool Parameters**:
+2. **Environment Variables**:
    <br>
-   Provide `token` as a parameter when calling the `get-clarity-data` tool
+   Set `CLARITY_API_TOKEN` in the environment of the server process:
+   ```bash
+   export CLARITY_API_TOKEN=your-token
+   ```
 
 ## Configuring MCP Clients
 
@@ -129,6 +147,14 @@ To configure Claude for Desktop to use this server:
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 2. Add the configuration shown in the generic example above
 3. Save the configuration file and restart Claude for Desktop
+
+### GitHub Copilot CLI Configuration
+
+To configure GitHub Copilot CLI to use this server:
+
+1. Open your Copilot CLI configuration file at `~/.copilot/mcp-config.json`
+2. Add the configuration shown in the generic example above
+3. Start a new Copilot CLI session
 
 ## Server Usage
 
