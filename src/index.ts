@@ -30,13 +30,13 @@ const server = new McpServer(
   {
     name: pkg.name,
     version: pkg.version,
+  },
+  {
+    instructions: SYSTEM_INSTRUCTIONS_PROMPT,
     capabilities: {
       resources: {},
       tools: {}
     },
-  },
-  {
-    instructions: SYSTEM_INSTRUCTIONS_PROMPT,
   }
 );
 
@@ -104,7 +104,7 @@ async function main() {
   if (CLARITY_API_TOKEN) {
     console.error("Clarity API token configured via environment/command-line");
   } else {
-    console.error("No Clarity API token configured, it must be provided with each request");
+    console.error("No Clarity API token configured. Set CLARITY_API_TOKEN or pass --clarity_api_token.");
   }
 
   const transport = new StdioServerTransport();
